@@ -5,6 +5,14 @@
 #define TX_PIN_NUMBER     1 
 #define CTS_PIN_NUMBER   2 
 #define RX_PIN_NUMBER     3 
+
+#define Push_Button		25 		
+#define LED_1			05
+#define LED_2			06
+#define AD7798_DOUT		04
+#define AD7798_DIN		03
+#define AD7798_CS		01		
+#define AD7798_SCLK		02
  
 // Low frequency clock source to be used by the SoftDevice
 #ifdef S210
