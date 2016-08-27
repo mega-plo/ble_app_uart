@@ -38,6 +38,10 @@
 #include "bsp.h"
 #include "bsp_btn_ble.h"
 
+#include "nrf_temp.h"
+//#include "app_gpiote.h"
+#include "app_button.h"
+
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 0                                           /**< Include the service_changed characteristic. If not enabled, the server's database cannot be changed for the lifetime of the device. */
 
 #define CENTRAL_LINK_COUNT              0                                           /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
@@ -512,6 +516,38 @@ static void power_manage(void)
     APP_ERROR_CHECK(err_code);
 }
 
+//
+void temp_service(void)
+{
+    int32_t volatile temp;
+    while (true)
+    {
+        NRF_TEMP->TASKS_START = 1; /** Start the temperature measurement. */
+
+        /* Busy wait while temperature measurement is not finished, you can skip waiting if you enable interrupt for DATARDY event and read the result in the interrupt. */
+        /*lint -e{845} // A zero has been given as right argument to operator '|'" */
+        while (NRF_TEMP->EVENTS_DATARDY == 0)
+        {
+            // Do nothing.
+        }
+        NRF_TEMP->EVENTS_DATARDY = 0;
+
+        /**@note Workaround for PAN_028 rev2.0A anomaly 29 - TEMP: Stop task clears the TEMP register. */
+        temp = (nrf_temp_read() / 4);
+
+        /**@note Workaround for PAN_028 rev2.0A anomaly 30 - TEMP: Temp module analog front end does not power down when DATARDY event occurs. */
+        NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */
+
+        //printf("Actual temperature: %d\n\r", (int)temp);
+
+    }
+}
+
+//
+static void gpiote_init(void)
+{
+    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+}
 
 /**@brief Application main function.
  */
@@ -531,19 +567,22 @@ int main(void)
     advertising_init();
     conn_params_init();
 
+    nrf_temp_init();
+	  gpiote_init();
     printf("\r\nPML Start!\r\n");
-    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    APP_ERROR_CHECK(err_code);
-    
+
 		// wait for button press to start broadcasting
-		bool connection = false;
-		while(connection == false)
-		{
-			err_code = ble_advertising_start(BLE_ADV_MODE_FAST);	
-		}
+//		bool button = false;
+//		while(button == false)
+//		{
+//      //wait for button press
+//		}
+    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);	
+    APP_ERROR_CHECK(err_code);
     // Enter main loop.
     for (;;)
     {
+        temp_service();
         power_manage();
     }
 }

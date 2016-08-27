@@ -57,3 +57,4 @@
 .\_build\main.o: ..\..\..\..\..\bsp\boards.h
 .\_build\main.o: D:\Downloads\nRF5_SDK_11.0.0_89a8197\examples\ble_peripheral\ble_app_uart\pca10028\s130\arm5_no_packs\RTE\custom_board.h
 .\_build\main.o: ..\..\..\..\..\bsp\bsp_btn_ble.h
+.\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_temp.h
