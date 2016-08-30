@@ -6,9 +6,31 @@
 #define CTS_PIN_NUMBER   2 
 #define RX_PIN_NUMBER     3 
 
-#define Push_Button		25 		
+#define LEDS_NUMBER    2
+
 #define LED_1			05
 #define LED_2			06
+
+#define LEDS_LIST { LED_1, LED_2}
+#define BSP_LED_0      LED_1
+#define BSP_LED_1      LED_2
+
+#define BSP_LED_0_MASK (1<<BSP_LED_0)
+#define BSP_LED_1_MASK (1<<BSP_LED_1)
+#define LEDS_MASK      (BSP_LED_0_MASK | BSP_LED_1_MASK)
+/* all LEDs are lit when GPIO is low */
+#define LEDS_INV_MASK  LEDS_MASK
+
+#define BUTTONS_NUMBER 1
+
+#define BUTTON_1		25 		
+
+#define BUTTON_PULL    NRF_GPIO_PIN_PULLUP
+#define BUTTONS_LIST { BUTTON_1}
+#define BSP_BUTTON_0   BUTTON_1
+#define BSP_BUTTON_0_MASK (1<<BSP_BUTTON_0)
+#define BUTTONS_MASK   0x00010000
+
 #define AD7798_DOUT		04
 #define AD7798_DIN		03
 #define AD7798_CS		01		

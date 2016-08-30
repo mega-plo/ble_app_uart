@@ -41,6 +41,7 @@
 #include "nrf_temp.h"
 //#include "app_gpiote.h"
 #include "app_button.h"
+#include "nrf_gpio.h"
 
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 0                                           /**< Include the service_changed characteristic. If not enabled, the server's database cannot be changed for the lifetime of the device. */
 
@@ -74,6 +75,9 @@ static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;
 
 static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
 
+bsp_indication_t actual_state =  BSP_INDICATE_FIRST;         /**< Currently indicated state. */
+
+const char * indications_list[] = BSP_INDICATIONS_LIST;
 
 /**@brief Function for assert macro callback.
  *
@@ -542,11 +546,49 @@ void temp_service(void)
 
     }
 }
-
-//
-static void gpiote_init(void)
+/**@brief Function for handling bsp events.
+ */
+void bsp_evt_handler(bsp_event_t evt)
 {
-    APP_GPIOTE_INIT(APP_GPIOTE_MAX_USERS);
+    uint32_t err_code;
+    switch (evt)
+    {
+        case BSP_EVENT_KEY_0:
+
+            if (actual_state != BSP_INDICATE_FIRST)
+                actual_state--;
+            else
+                actual_state = BSP_INDICATE_LAST;
+            break;
+
+        case BSP_EVENT_KEY_1:
+
+            if (actual_state != BSP_INDICATE_LAST)
+                actual_state++;
+            else
+                actual_state = BSP_INDICATE_FIRST;
+            break;
+
+        default:
+            return; // no implementation needed
+    }
+
+    err_code = bsp_indication_text_set(actual_state, indications_list[actual_state]);
+    APP_ERROR_CHECK(err_code);
+}
+/**@brief Function for initializing bsp module.
+ */
+void bsp_configuration()
+{
+    uint32_t err_code;
+
+    err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS,
+                        APP_TIMER_TICKS(100, APP_TIMER_PRESCALER),
+                        bsp_evt_handler);
+    APP_ERROR_CHECK(err_code);
+
+    // err_code = bsp_buttons_enable( (1 << BUTTON_PREV_ID) | (1 << BUTTON_NEXT_ID) );
+    // APP_ERROR_CHECK(err_code);
 }
 
 /**@brief Application main function.
@@ -568,7 +610,7 @@ int main(void)
     conn_params_init();
 
     nrf_temp_init();
-	  gpiote_init();
+    bsp_configuration();
     printf("\r\nPML Start!\r\n");
 
 		// wait for button press to start broadcasting
@@ -577,6 +619,7 @@ int main(void)
 //		{
 //      //wait for button press
 //		}
+		LEDS_INVERT(BSP_LED_0_MASK);
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);	
     APP_ERROR_CHECK(err_code);
     // Enter main loop.
