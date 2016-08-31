@@ -602,7 +602,7 @@ int main(void)
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
     uart_init();
     
-    buttons_leds_init(&erase_bonds);
+    //buttons_leds_init(&erase_bonds);
     ble_stack_init();
     gap_params_init();
     services_init();
@@ -619,7 +619,7 @@ int main(void)
 //		{
 //      //wait for button press
 //		}
-		LEDS_INVERT(BSP_LED_0_MASK);
+//		LEDS_INVERT(BSP_LED_0_MASK);
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);	
     APP_ERROR_CHECK(err_code);
     // Enter main loop.
