@@ -42,6 +42,7 @@
 //#include "app_gpiote.h"
 #include "app_button.h"
 #include "nrf_gpio.h"
+#include "nrf_drv_spi.h"
 
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 0                                           /**< Include the service_changed characteristic. If not enabled, the server's database cannot be changed for the lifetime of the device. */
 
@@ -590,6 +591,7 @@ void bsp_configuration()
     // err_code = bsp_buttons_enable( (1 << BUTTON_PREV_ID) | (1 << BUTTON_NEXT_ID) );
     // APP_ERROR_CHECK(err_code);
 }
+
 
 /**@brief Application main function.
  */

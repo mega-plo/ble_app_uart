@@ -58,3 +58,9 @@
 .\_build\main.o: D:\Downloads\nRF5_SDK_11.0.0_89a8197\examples\ble_peripheral\ble_app_uart\pca10028\s130\arm5_no_packs\RTE\custom_board.h
 .\_build\main.o: ..\..\..\..\..\bsp\bsp_btn_ble.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_temp.h
+.\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\spi_master\nrf_drv_spi.h
+.\_build\main.o: ..\..\..\config\ble_app_uart_s130_pca10028\nrf_drv_config.h
+.\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\config\nrf_drv_config_validation.h
+.\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_spi.h
+.\_build\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+.\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_spim.h
