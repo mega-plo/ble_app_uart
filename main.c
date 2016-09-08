@@ -80,15 +80,21 @@ bsp_indication_t actual_state =  BSP_INDICATE_FIRST;         /**< Currently indi
 
 const char * indications_list[] = BSP_INDICATIONS_LIST;
 
+static const nrf_drv_spi_t m_spi_master_0 = NRF_DRV_SPI_INSTANCE(0);
+
 #define SPI_CS_PIN   AD7798_CS  /**< SPI CS Pin.*/ 
 
 #define SPI_INSTANCE  0 /**< SPI instance index. */
 static const nrf_drv_spi_t spi = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);  /**< SPI instance. */
 static volatile bool spi_xfer_done;  /**< Flag used to indicate that SPI instance completed the transfer. */
 
-#define TEST_STRING "Nordic"
-static uint8_t       m_tx_buf[] = TEST_STRING;           /**< TX buffer. */
-static uint8_t       m_rx_buf[sizeof(TEST_STRING)+1];    /**< RX buffer. */
+//#define TEST_STRING "Nordic"
+//static uint8_t       m_tx_buf[] = TEST_STRING;           /**< TX buffer. */
+//static uint8_t       m_rx_buf[sizeof(TEST_STRING)+1];    /**< RX buffer. */
+//static const uint8_t m_length = sizeof(m_tx_buf);        /**< Transfer length. */
+
+static uint8_t       m_tx_buf[] = {0x00, 0x00, 0x00, 0x00, 0x00};           /**< TX buffer. */
+static uint8_t       m_rx_buf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};    /**< RX buffer. */
 static const uint8_t m_length = sizeof(m_tx_buf);        /**< Transfer length. */
 
 /**@brief Function for assert macro callback.
@@ -596,6 +602,24 @@ void spi_event_handler(nrf_drv_spi_evt_t const * p_event)
     }
 }
 
+void spi_init()
+{
+	  nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DEFAULT_CONFIG(SPI_INSTANCE);
+    spi_config.ss_pin = SPI_CS_PIN;
+    APP_ERROR_CHECK(nrf_drv_spi_init(&spi, &spi_config, spi_event_handler));
+	
+		//flush rx buffer and transfer done flag
+	  memset(m_rx_buf, 0, m_length);
+    spi_xfer_done = false;
+    APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi, m_tx_buf, m_length, m_rx_buf, m_length));
+  
+}
+
+void add7789_spi_init()
+{
+		
+}
+
 /**@brief Application main function.
  */
 int main(void)
@@ -616,6 +640,7 @@ int main(void)
 
     nrf_temp_init();
     bsp_configuration();
+
     printf("\r\nPML Start!\r\n");
 
 		// wait for button press to start broadcasting
@@ -625,16 +650,19 @@ int main(void)
 //      //wait for button press
 //		}
 //		LEDS_INVERT(BSP_LED_0_MASK);
+
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);	
     APP_ERROR_CHECK(err_code);
+		spi_init();
+		add7789_spi_init();
     // Enter main loop.
     for (;;)
     {
         temp_service();
+				
         power_manage();
     }
 }
-
 
 /** 
  * @}

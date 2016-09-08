@@ -28,17 +28,13 @@ Project File Date:  09/01/2016
 *** Using Compiler 'V5.06 update 2 (build 183)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'nrf51422_xxac_s130'
 compiling main.c...
-..\..\..\main.c(86): warning:  #177-D: variable "spi" was declared but never referenced
-  static const nrf_drv_spi_t spi = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);  /**< SPI instance. */
-..\..\..\main.c(90): warning:  #550-D: variable "m_tx_buf" was set but never used
-  static uint8_t       m_tx_buf[] = TEST_STRING;           /**< TX buffer. */
-..\..\..\main.c(92): warning:  #177-D: variable "m_length" was declared but never referenced
-  static const uint8_t m_length = sizeof(m_tx_buf);        /**< Transfer length. */
-..\..\..\main.c: 3 warnings, 0 errors
+..\..\..\main.c(83): warning:  #177-D: variable "m_spi_master_0" was declared but never referenced
+  static const nrf_drv_spi_t m_spi_master_0 = NRF_DRV_SPI_INSTANCE(0);
+..\..\..\main.c: 1 warning, 0 errors
 linking...
-Program Size: Code=15680 RO-data=1020 RW-data=332 ZI-data=4052  
+Program Size: Code=16496 RO-data=1060 RW-data=336 ZI-data=4056  
 FromELF: creating hex file...
-".\_build\nrf51422_xxac_s130.axf" - 0 Error(s), 3 Warning(s).
+".\_build\nrf51422_xxac_s130.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -65,10 +61,10 @@ Package Vendor: NordicSemiconductor
    * Component: ARM::CMSIS:CORE:4.3.0
 
    * Component: NordicSemiconductor::Device:Startup:8.5.0
-      Source file:   Device\Source\arm\arm_startup_nrf51.s
       Source file:   Device\Source\system_nrf51.c
+      Source file:   Device\Source\arm\arm_startup_nrf51.s
       Include file:  Device\Include\system_nrf51.h
-Build Time Elapsed:  00:00:02
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>
