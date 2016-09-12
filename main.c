@@ -43,6 +43,8 @@
 #include "app_button.h"
 #include "nrf_gpio.h"
 #include "nrf_drv_spi.h"
+#include "AD7798.h"
+
 
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 0                                           /**< Include the service_changed characteristic. If not enabled, the server's database cannot be changed for the lifetime of the device. */
 
@@ -96,6 +98,11 @@ static volatile bool spi_xfer_done;  /**< Flag used to indicate that SPI instanc
 static uint8_t       m_tx_buf[] = {0x00, 0x00, 0x00, 0x00, 0x00};           /**< TX buffer. */
 static uint8_t       m_rx_buf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};    /**< RX buffer. */
 static const uint8_t m_length = sizeof(m_tx_buf);        /**< Transfer length. */
+
+#define AD7798_CS_LOW  			nrf_drv_gpiote_out_clear(SPIM0_SS_PIN)
+#define AD7798_CS_HIGH      nrf_drv_gpiote_out_set(SPIM0_SS_PIN)
+static volatile uint16_t value = 0x00;
+static volatile int32_t  temp;
 
 /**@brief Function for assert macro callback.
  *
@@ -520,7 +527,6 @@ static void power_manage(void)
 //
 void temp_service(void)
 {
-    int32_t volatile temp;
     while (true)
     {
         NRF_TEMP->TASKS_START = 1; /** Start the temperature measurement. */
@@ -615,11 +621,226 @@ void spi_init()
   
 }
 
-void add7789_spi_init()
+/***************************************************************************//**
+ * @brief Sends 32 consecutive 1's on SPI in order to reset the part.
+ *
+ * @param None.
+ *
+ * @return  None.    
+*******************************************************************************/
+void AD7798_Reset(void)
 {
-		
+	unsigned char dataToSend[5] = {0x03, 0xff, 0xff, 0xff, 0xff};
+	//AD7798_CS_LOW;
+	
+	APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi, dataToSend, 5, NULL, 0));
+	//AD7798_CS_HIGH;	
+}
+/***************************************************************************//**
+ * @brief Reads the value of the selected register
+ *
+ * @param regAddress - The address of the register to read.
+ * @param size - The size of the register to read.
+ *
+ * @return data - The value of the selected register register.
+*******************************************************************************/
+unsigned long AD7798_GetRegisterValue(unsigned char regAddress, unsigned char size)
+{
+	unsigned char data[5] = {0x03, 0x00, 0x00, 0x00, 0x00};
+	unsigned long receivedData = 0x00;	
+	data[1] = AD7798_COMM_READ |  AD7798_COMM_ADDR(regAddress);
+	//AD7798_CS_LOW;  
+  APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi, NULL, 0, data, 5));
+	//AD7798_CS_HIGH;
+	if(size == 1)
+	{
+		receivedData += (data[0] << 0);
+	}
+	if(size == 2)
+	{
+		receivedData += (data[0] << 8);
+		receivedData += (data[1] << 0);
+	}
+	if(size == 3)
+	{
+		receivedData += (data[0] << 16);
+		receivedData += (data[1] << 8);
+		receivedData += (data[2] << 0);
+	}
+    return receivedData;
+}
+/***************************************************************************//**
+ * @brief Initializes the AD7798 and checks if the device is present.
+ *
+ * @param None.
+ *
+ * @return status - Result of the initialization procedure.
+ *                  Example: 1 - if initialization was successful (ID is 0x0B).
+ *                           0 - if initialization was unsuccessful.
+*******************************************************************************/
+unsigned char AD7798_Init(void)
+{ 
+	unsigned char status = 0x1;
+	if((AD7798_GetRegisterValue(AD7798_REG_ID, 1) & 0x0F) != AD7798_ID)
+	{
+		status = 0x0;
+	}
+	
+	return(status);
+}
+/***************************************************************************//**
+ * @brief Writes the value to the register
+ *
+ * @param -  regAddress - The address of the register to write to.
+ * @param -  regValue - The value to write to the register.
+ * @param -  size - The size of the register to write.
+ *
+ * @return  None.    
+*******************************************************************************/
+void AD7798_SetRegisterValue(unsigned char regAddress,
+                             unsigned long regValue, 
+                             unsigned char size)
+{
+	unsigned char data[5] = {0x03, 0x00, 0x00, 0x00, 0x00};	
+	data[1] = AD7798_COMM_WRITE |  AD7798_COMM_ADDR(regAddress);
+    if(size == 1)
+    {
+        data[2] = (unsigned char)regValue;
+    }
+    if(size == 2)
+    {
+		data[3] = (unsigned char)((regValue & 0x0000FF) >> 0);
+        data[2] = (unsigned char)((regValue & 0x00FF00) >> 8);
+    }
+    if(size == 3)
+    {
+		data[4] = (unsigned char)((regValue & 0x0000FF) >> 0);
+		data[3] = (unsigned char)((regValue & 0x00FF00) >> 8);
+        data[2] = (unsigned char)((regValue & 0xFF0000) >> 16);
+    }
+		    
+	APP_ERROR_CHECK(nrf_drv_spi_transfer(&spi, data, (1+size), NULL, 0));
+}
+/***************************************************************************//**
+ * @brief Reads /RDY bit of status reg.
+ *
+ * @param None.
+ *
+ * @return rdy	- 0 if RDY is 1.
+ *              - 1 if RDY is 0.
+*******************************************************************************/
+unsigned char AD7798_Ready(void)
+{
+    unsigned char rdy = 0;
+    rdy = (AD7798_GetRegisterValue( AD7798_REG_STAT,1) & 0x80);   
+	
+	return(!rdy);
 }
 
+/***************************************************************************//**
+ * @brief Sets the operating mode of AD7798.
+ *
+ * @param mode - Mode of operation.
+ *
+ * @return  None.    
+*******************************************************************************/
+void AD7798_SetMode(unsigned long mode)
+{
+    unsigned long command;
+    command = AD7798_GetRegisterValue(AD7798_REG_MODE,2);
+    command &= ~AD7798_MODE_SEL(0xFF);
+    command |= AD7798_MODE_SEL(mode);
+    AD7798_SetRegisterValue(
+            AD7798_REG_MODE,
+            command,
+            2
+    );
+}
+/***************************************************************************//**
+ * @brief Selects the channel of AD7798.
+ *
+ * @param  channel - ADC channel selection.
+ *
+ * @return  None.    
+*******************************************************************************/
+void AD7798_SetChannel(unsigned long channel)
+{
+    unsigned long command;
+    command = AD7798_GetRegisterValue(AD7798_REG_CONF,2);
+    command &= ~AD7798_CONF_CHAN(0xFF);
+    command |= AD7798_CONF_CHAN(channel);
+    AD7798_SetRegisterValue(
+            AD7798_REG_CONF,
+            command,
+            2
+    );
+}
+
+/***************************************************************************//**
+ * @brief  Sets the gain of the In-Amp.
+ *
+ * @param  gain - Gain.
+ *
+ * @return  None.    
+*******************************************************************************/
+void AD7798_SetGain(unsigned long gain)
+{
+    unsigned long command;
+    command = AD7798_GetRegisterValue(AD7798_REG_CONF,2);
+    command &= ~AD7798_CONF_GAIN(0xFF);
+    command |= AD7798_CONF_GAIN(gain);
+    AD7798_SetRegisterValue(
+            AD7798_REG_CONF,
+            command,
+            2
+    );
+}
+/***************************************************************************//**
+ * @brief Enables or disables the reference detect function.
+ *
+ * @param state - State of the reference detect function.
+ *               Example: 0	- Reference detect disabled.
+ *                        1	- Reference detect enabled.
+ *
+ * @return None.    
+*******************************************************************************/
+void AD7798_SetReference(unsigned char state)
+{
+    unsigned long command = 0;
+    command = AD7798_GetRegisterValue(AD7798_REG_CONF,2);
+    command &= ~AD7798_CONF_REFDET(1);
+    command |= AD7798_CONF_REFDET(state);
+    AD7798_SetRegisterValue(AD7798_REG_CONF,
+							command,
+							2);
+}
+
+void spi_service(void)
+{
+		memset(m_rx_buf, 0, m_length);
+    spi_xfer_done = false;
+		
+		if(AD7798_Ready())
+		{
+			value = AD7798_GetRegisterValue( AD7798_REG_DATA,3);
+			if(value > 0x8000) 
+			{
+				value -= 0x8000;
+				value = ((value * 2500) >> 23);
+			}
+			else
+			{
+				value = 0x8000 - value;
+				value = ((value * 2500) >> 23);
+			}
+		}
+}
+
+void uart_service (void)
+{
+	
+	
+}
 /**@brief Application main function.
  */
 int main(void)
@@ -641,7 +862,7 @@ int main(void)
     nrf_temp_init();
     bsp_configuration();
 
-    printf("\r\nPML Start!\r\n");
+    printf("\r\nQuik Sensor Start!\r\n");
 
 		// wait for button press to start broadcasting
 //		bool button = false;
@@ -654,11 +875,17 @@ int main(void)
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);	
     APP_ERROR_CHECK(err_code);
 		spi_init();
-		add7789_spi_init();
+		AD7798_Reset();
+	  if (!AD7798_Init())
+		{
+			printf("\r\nSPI Fail!\r\n");
+		}
+		
     // Enter main loop.
     for (;;)
     {
         temp_service();
+				spi_service();
 				
         power_manage();
     }

@@ -64,3 +64,4 @@
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_spi.h
 .\_build\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\_build\main.o: ..\..\..\..\..\..\components\drivers_nrf\hal\nrf_spim.h
+.\_build\main.o: ..\..\..\AD7798.h
